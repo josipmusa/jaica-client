@@ -1,22 +1,21 @@
 import { useState } from 'react';
 import type { RetrievedFile, DependencyGraph } from '../types';
 import DependencyGraphFlow from './DependencyGraphFlow';
-
+import CodeViewer from './CodeViewer';
 interface SidePanelProps {
   retrievedFiles?: RetrievedFile[];
   dependencyGraph?: DependencyGraph;
   isOpen: boolean;
   onClose: () => void;
 }
-
 export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onClose }: SidePanelProps) {
-  const [activeTab, setActiveTab] = useState<'files' | 'graph'>('files');
+  const [activeTab, setActiveTab] = useState<'files' | 'graph' | 'code'>('files');
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
-
+  const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
+  const [viewedCode, setViewedCode] = useState({ code: '', language: 'typescript', filePath: '' });
   const hasFiles = retrievedFiles && retrievedFiles.length > 0;
   const hasGraph = dependencyGraph && dependencyGraph.nodes.length > 0;
   const hasContent = hasFiles || hasGraph;
-
   const toggleFileExpansion = (path: string) => {
     const newExpanded = new Set(expandedFiles);
     if (newExpanded.has(path)) {
@@ -26,11 +25,18 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
     }
     setExpandedFiles(newExpanded);
   };
-
+  const openCodeViewer = (code: string, filePath: string, language: string = 'typescript') => {
+    setViewedCode({ code, language, filePath });
+    setIsCodeViewerOpen(true);
+    setActiveTab('code');
+  };
+  const closeCodeViewer = () => {
+    setIsCodeViewerOpen(false);
+    setActiveTab('files');
+  };
   if (!hasContent) {
     return null;
   }
-
   return (
     <>
       {/* Backdrop */}
@@ -40,7 +46,6 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
           onClick={onClose}
         />
       )}
-
       {/* Side Panel */}
       <div
         className={`fixed lg:relative right-0 top-0 h-screen w-full lg:w-96 bg-slate-900 border-l border-slate-700/50 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
@@ -64,7 +69,6 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
             </svg>
           </button>
         </div>
-
         {/* Tabs */}
         <div className="flex border-b border-slate-700/50 bg-slate-800/30">
           {hasFiles && (
@@ -91,8 +95,24 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
               Dependencies
             </button>
           )}
+          <button
+            onClick={() => {
+              if (isCodeViewerOpen) {
+                setActiveTab('code');
+              }
+            }}
+            disabled={!isCodeViewerOpen}
+            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'code'
+                ? 'text-purple-400 border-b-2 border-purple-400'
+                : isCodeViewerOpen
+                ? 'text-slate-400 hover:text-slate-300'
+                : 'text-slate-600 cursor-not-allowed'
+            }`}
+          >
+            Code Viewer
+          </button>
         </div>
-
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'files' && hasFiles && (
@@ -105,11 +125,11 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
                     className="bg-slate-800/50 border border-slate-700/50 rounded-lg overflow-hidden"
                   >
                     {/* File Header */}
-                    <button
-                      onClick={() => toggleFileExpansion(file.path)}
-                      className="w-full px-3 py-2 flex items-center justify-between hover:bg-slate-700/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="w-full px-3 py-2 flex items-center justify-between group">
+                      <button
+                        onClick={() => toggleFileExpansion(file.path)}
+                        className="flex items-center gap-2 flex-1 min-w-0 hover:text-blue-300 transition-colors"
+                      >
                         <svg
                           className="w-4 h-4 text-blue-400 shrink-0"
                           fill="none"
@@ -126,31 +146,47 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
                         <span className="text-sm text-slate-200 truncate font-mono">
                           {file.path}
                         </span>
-                      </div>
+                      </button>
                       <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => {
+                            const lang = file.path.split('.').pop() || 'typescript';
+                            openCodeViewer(file.content, file.path, lang);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 text-purple-400 hover:bg-purple-500/20 rounded transition-all"
+                          title="Open in code viewer"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </button>
                         {file.relevance !== undefined && (
                           <span className="text-xs text-slate-400 px-2 py-0.5 bg-slate-700/50 rounded">
                             {Math.round(file.relevance * 100)}%
                           </span>
                         )}
-                        <svg
-                          className={`w-4 h-4 text-slate-400 transition-transform ${
-                            isExpanded ? 'rotate-180' : ''
-                          }`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                        <button
+                          onClick={() => toggleFileExpansion(file.path)}
+                          className="p-1 hover:bg-slate-700/30 rounded transition-colors"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
+                          <svg
+                            className={`w-4 h-4 text-slate-400 transition-transform ${
+                              isExpanded ? 'rotate-180' : ''
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </button>
                       </div>
-                    </button>
-
+                    </div>
                     {/* File Content */}
                     {isExpanded && (
                       <div className="border-t border-slate-700/50">
@@ -164,7 +200,6 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
               })}
             </div>
           )}
-
           {activeTab === 'graph' && hasGraph && (
             <div className="flex flex-col h-full">
               {dependencyGraph.description && (
@@ -177,9 +212,19 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
               </div>
             </div>
           )}
+          {activeTab === 'code' && (
+            <div className="h-full">
+              <CodeViewer
+                code={viewedCode.code}
+                language={viewedCode.language}
+                filePath={viewedCode.filePath}
+                isOpen={isCodeViewerOpen}
+                onClose={closeCodeViewer}
+              />
+            </div>
+          )}
         </div>
       </div>
     </>
   );
 }
-
