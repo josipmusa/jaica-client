@@ -48,14 +48,14 @@ function App() {
         content: response.answer,
         intent: response.intent,
         timestamp: new Date(),
-        retrievedFiles: response.retrieved_files,
-        dependencyGraph: response.dependency_graph,
+        retrievedFiles: response.retrievedFiles,
+        dependencyGraph: response.dependencyGraph,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Auto-open panel if there's context data
-      if (response.retrieved_files || response.dependency_graph) {
+      if (response.retrievedFiles || response.dependencyGraph) {
         setSelectedMessage(assistantMessage);
         setIsPanelOpen(true);
       }

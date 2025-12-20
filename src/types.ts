@@ -16,8 +16,8 @@ export interface Message {
   content: string;
   intent?: string;
   timestamp: Date;
-  retrieved_files?: RetrievedFile[];
-  dependency_graph?: DependencyGraph;
+  retrievedFiles?: RetrievedFile[];
+  dependencyGraph?: DependencyGraph;
 }
 
 export interface ChatRequest {
@@ -28,7 +28,7 @@ export interface ChatRequest {
 export interface ChatResponse {
   answer: string;
   intent: string;
-  retrieved_files?: RetrievedFile[];
-  dependency_graph?: DependencyGraph;
+  retrievedFiles?: RetrievedFile[];
+  dependencyGraph?: DependencyGraph;
 }
 

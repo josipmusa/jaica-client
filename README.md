@@ -1,14 +1,17 @@
 # AI Coding Assistant - Frontend
 
-A clean and professional chat interface for your local AI coding assistant.
+A clean and professional chat interface for your local AI coding assistant with interactive dependency graph visualization.
 
 ## Features
 
 - 💬 Real-time chat interface with message history
-- 🎨 Clean, professional UI built with Tailwind CSS
+- 🎨 Clean, professional dark-mode UI built with Tailwind CSS
 - 🔄 HTTP-based communication with backend
 - 📝 Support for optional project context
 - 🎯 Intent display for assistant responses
+- 📁 Side panel for retrieved files and context
+- 🔀 Interactive dependency graph visualization using React Flow
+- 📱 Responsive design with mobile support
 - ⌨️ Keyboard shortcuts (Enter to send, Shift+Enter for new line)
 
 ## Setup
@@ -47,9 +50,38 @@ The frontend expects your backend to have a POST endpoint at `/chat` that:
 ```json
 {
   "answer": "Assistant's response",
-  "intent": "The detected intent"
+  "intent": "The detected intent",
+  "retrieved_files": [
+    {
+      "path": "src/example.ts",
+      "content": "file content here",
+      "relevance": 0.95
+    }
+  ],
+  "dependency_graph": {
+    "nodes": ["module1", "module2", "module3"],
+    "edges": [
+      { "from": "module1", "to": "module2" },
+      { "from": "module2", "to": "module3" }
+    ],
+    "description": "Optional description of the graph"
+  }
 }
 ```
+
+Note: `retrieved_files` and `dependency_graph` are optional and will only show in the UI when present.
+
+## Dependency Graph Visualization
+
+The application uses React Flow to create interactive dependency graphs. Features include:
+
+- **Interactive nodes**: Drag nodes to rearrange the graph
+- **Zoom & Pan**: Navigate large graphs easily
+- **Minimap**: Overview of the entire graph structure
+- **Animated edges**: Visual flow indicators
+- **Radial layout**: Automatically positions nodes in a circular pattern
+
+The graph opens automatically in the side panel when dependency data is included in the response.
 
 ## Tech Stack
 
@@ -57,7 +89,9 @@ The frontend expects your backend to have a POST endpoint at `/chat` that:
 - TypeScript
 - Vite
 - Tailwind CSS
+- React Flow (for dependency graphs)
 - UUID for message identification
+
 
 ## Building for Production
 

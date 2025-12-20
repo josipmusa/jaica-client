@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { RetrievedFile, DependencyGraph } from '../types';
+import DependencyGraphFlow from './DependencyGraphFlow';
 
 interface SidePanelProps {
   retrievedFiles?: RetrievedFile[];
@@ -165,62 +166,15 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
           )}
 
           {activeTab === 'graph' && hasGraph && (
-            <div className="p-4 space-y-4">
+            <div className="flex flex-col h-full">
               {dependencyGraph.description && (
-                <div className="text-sm text-slate-400 bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
+                <div className="text-sm text-slate-400 bg-slate-800/50 border-b border-slate-700/50 p-3">
                   {dependencyGraph.description}
                 </div>
               )}
-
-              {/* Nodes */}
-              <div>
-                <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">
-                  Nodes ({dependencyGraph.nodes.length})
-                </h3>
-                <div className="space-y-1">
-                  {dependencyGraph.nodes.map((node, index) => (
-                    <div
-                      key={index}
-                      className="text-sm text-slate-200 bg-slate-800/50 border border-slate-700/50 rounded px-3 py-2 font-mono"
-                    >
-                      {node}
-                    </div>
-                  ))}
-                </div>
+              <div className="flex-1 min-h-0">
+                <DependencyGraphFlow dependencyGraph={dependencyGraph} />
               </div>
-
-              {/* Edges */}
-              {dependencyGraph.edges.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">
-                    Dependencies ({dependencyGraph.edges.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {dependencyGraph.edges.map((edge, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 text-sm bg-slate-800/50 border border-slate-700/50 rounded px-3 py-2"
-                      >
-                        <span className="text-blue-400 font-mono">{edge.from}</span>
-                        <svg
-                          className="w-4 h-4 text-slate-500 flex-shrink-0"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 7l5 5m0 0l-5 5m5-5H6"
-                          />
-                        </svg>
-                        <span className="text-purple-400 font-mono">{edge.to}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
