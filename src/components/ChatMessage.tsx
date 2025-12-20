@@ -1,12 +1,90 @@
 import type { Message } from '../types';
-
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/vs2015.css';
+import type { Components } from 'react-markdown';
 interface ChatMessageProps {
   message: Message;
 }
-
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
-
+  const markdownComponents: Components = {
+    code: ({ className, children, ...props }: any) => {
+      const isInline = !className;
+      return isInline ? (
+        <code className="bg-slate-900/50 px-1.5 py-0.5 rounded text-sm text-purple-300" {...props}>
+          {children}
+        </code>
+      ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
+    pre: ({ children, ...props }: any) => (
+      <pre className="bg-slate-900/70 border border-slate-700/50 rounded-lg p-4 overflow-x-auto my-3" {...props}>
+        {children}
+      </pre>
+    ),
+    a: ({ children, ...props }: any) => (
+      <a className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer" {...props}>
+        {children}
+      </a>
+    ),
+    ul: ({ children, ...props }: any) => (
+      <ul className="list-disc list-inside space-y-1 my-2" {...props}>
+        {children}
+      </ul>
+    ),
+    ol: ({ children, ...props }: any) => (
+      <ol className="list-decimal list-inside space-y-1 my-2" {...props}>
+        {children}
+      </ol>
+    ),
+    h1: ({ children, ...props }: any) => (
+      <h1 className="text-2xl font-bold mt-4 mb-2 text-white" {...props}>
+        {children}
+      </h1>
+    ),
+    h2: ({ children, ...props }: any) => (
+      <h2 className="text-xl font-bold mt-3 mb-2 text-white" {...props}>
+        {children}
+      </h2>
+    ),
+    h3: ({ children, ...props }: any) => (
+      <h3 className="text-lg font-bold mt-2 mb-1 text-white" {...props}>
+        {children}
+      </h3>
+    ),
+    blockquote: ({ children, ...props }: any) => (
+      <blockquote className="border-l-4 border-purple-500 pl-4 italic my-2 text-slate-300" {...props}>
+        {children}
+      </blockquote>
+    ),
+    table: ({ children, ...props }: any) => (
+      <div className="overflow-x-auto my-3">
+        <table className="min-w-full border border-slate-700" {...props}>
+          {children}
+        </table>
+      </div>
+    ),
+    th: ({ children, ...props }: any) => (
+      <th className="border border-slate-700 px-3 py-2 bg-slate-800/50 font-semibold text-left" {...props}>
+        {children}
+      </th>
+    ),
+    td: ({ children, ...props }: any) => (
+      <td className="border border-slate-700 px-3 py-2" {...props}>
+        {children}
+      </td>
+    ),
+    p: ({ children, ...props }: any) => (
+      <p className="my-2 leading-relaxed" {...props}>
+        {children}
+      </p>
+    ),
+  };
   return (
     <div className={`flex gap-3 mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
@@ -16,7 +94,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           </svg>
         </div>
       )}
-
       <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
         <div
           className={`rounded-2xl px-5 py-3 shadow-lg ${
@@ -25,8 +102,18 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               : 'bg-slate-800/80 border border-slate-700/50 text-slate-100 rounded-bl-md'
           }`}
         >
-          <div className="text-[15px] leading-relaxed whitespace-pre-wrap wrap-break-word">
-            {message.content}
+          <div className="text-[15px] leading-relaxed prose prose-invert prose-slate max-w-none">
+            {isUser ? (
+              <div className="whitespace-pre-wrap wrap-break-word">{message.content}</div>
+            ) : (
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={markdownComponents}
+              >
+                {message.content}
+              </ReactMarkdown>
+            )}
           </div>
           {message.intent && !isUser && (
             <div className="mt-3 pt-3 border-t border-slate-700/50 flex items-center gap-2">
@@ -41,7 +128,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
-
       {isUser && (
         <div className="shrink-0 w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,4 +138,3 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     </div>
   );
 }
-
