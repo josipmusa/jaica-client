@@ -111,7 +111,7 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <svg
-                          className="w-4 h-4 text-blue-400 flex-shrink-0"
+                          className="w-4 h-4 text-blue-400 shrink-0"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -127,7 +127,7 @@ export default function SidePanel({ retrievedFiles, dependencyGraph, isOpen, onC
                           {file.path}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         {file.relevance !== undefined && (
                           <span className="text-xs text-slate-400 px-2 py-0.5 bg-slate-700/50 rounded">
                             {Math.round(file.relevance * 100)}%
