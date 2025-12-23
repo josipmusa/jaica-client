@@ -36,7 +36,7 @@ The application will be available at `http://localhost:5173`
 
 ## API Integration
 
-The frontend expects your backend to have a POST endpoint at `/chat` that:
+The frontend expects your backend to have a POST endpoint at `/api/chat` that:
 
 **Request:**
 ```json
