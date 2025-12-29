@@ -26,13 +26,6 @@ export interface ChatRequest {
   project_name?: string;
 }
 
-export interface ChatResponse {
-  answer: string;
-  intent: string;
-  retrievedFiles?: RetrievedFile[];
-  dependencyGraph?: DependencyGraph;
-}
-
 export interface StreamChunk {
   type: 'content' | 'metadata' | 'done';
   content?: string;
