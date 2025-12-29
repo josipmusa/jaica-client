@@ -18,6 +18,7 @@ export interface Message {
   timestamp: Date;
   retrievedFiles?: RetrievedFile[];
   dependencyGraph?: DependencyGraph;
+  isStreaming?: boolean;
 }
 
 export interface ChatRequest {
@@ -28,6 +29,14 @@ export interface ChatRequest {
 export interface ChatResponse {
   answer: string;
   intent: string;
+  retrievedFiles?: RetrievedFile[];
+  dependencyGraph?: DependencyGraph;
+}
+
+export interface StreamChunk {
+  type: 'content' | 'metadata' | 'done';
+  content?: string;
+  intent?: string;
   retrievedFiles?: RetrievedFile[];
   dependencyGraph?: DependencyGraph;
 }

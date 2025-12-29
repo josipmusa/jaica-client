@@ -3,16 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import SidePanel from './components/SidePanel';
-import { sendMessage } from './api';
-import type { Message } from './types';
+import { streamMessage } from './api';
+import type { Message, RetrievedFile, DependencyGraph } from './types';
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check if any message is currently streaming
+  const isLoading = messages.some(msg => msg.isStreaming);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -32,38 +34,111 @@ function App() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
     setError(null);
 
+    // Create placeholder for assistant message
+    const assistantId = uuidv4();
+    const assistantMessage: Message = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+
+    setMessages((prev) => [...prev, assistantMessage]);
+
     try {
-      const response = await sendMessage({
+      const stream = streamMessage({
         prompt: content,
         project_name: projectName,
       });
 
-      // Add assistant message with optional context data
-      const assistantMessage: Message = {
-        id: uuidv4(),
-        role: 'assistant',
-        content: response.answer,
-        intent: response.intent,
-        timestamp: new Date(),
-        retrievedFiles: response.retrievedFiles,
-        dependencyGraph: response.dependencyGraph,
-      };
+      let accumulatedContent = '';
+      let intent: string | undefined;
+      let retrievedFiles: RetrievedFile[] | undefined = undefined;
+      let dependencyGraph: DependencyGraph | undefined = undefined;
+      let hasOpenedPanel = false;
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      for await (const chunk of stream) {
+        if (chunk.type === 'content' && chunk.content) {
+          accumulatedContent += chunk.content;
 
-      // Auto-open panel if there's context data
-      if (response.retrievedFiles || response.dependencyGraph) {
-        setSelectedMessage(assistantMessage);
-        setIsPanelOpen(true);
+          // Update the message with accumulated content (and any metadata we have)
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? {
+                    ...msg,
+                    content: accumulatedContent,
+                    intent,
+                    retrievedFiles,
+                    dependencyGraph,
+                  }
+                : msg
+            )
+          );
+        } else if (chunk.type === 'metadata') {
+          // Update metadata immediately when received
+          if (chunk.intent) intent = chunk.intent;
+          if (chunk.retrievedFiles) retrievedFiles = chunk.retrievedFiles;
+          if (chunk.dependencyGraph) dependencyGraph = chunk.dependencyGraph;
+
+          // Update the message with metadata
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? {
+                    ...msg,
+                    content: accumulatedContent,
+                    intent,
+                    retrievedFiles,
+                    dependencyGraph,
+                    isStreaming: true,
+                  }
+                : msg
+            )
+          );
+
+          // Auto-open panel when metadata arrives (usually first chunk)
+          if (!hasOpenedPanel && (retrievedFiles || dependencyGraph)) {
+            const currentMessage: Message = {
+              id: assistantId,
+              role: 'assistant',
+              content: accumulatedContent,
+              intent,
+              timestamp: new Date(),
+              retrievedFiles,
+              dependencyGraph,
+            };
+            setSelectedMessage(currentMessage);
+            setIsPanelOpen(true);
+            hasOpenedPanel = true;
+          }
+        } else if (chunk.type === 'done') {
+          // Final update (mark streaming as complete)
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? {
+                    ...msg,
+                    content: accumulatedContent,
+                    intent,
+                    retrievedFiles,
+                    dependencyGraph,
+                    isStreaming: false,
+                  }
+                : msg
+            )
+          );
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Error sending message:', err);
-    } finally {
-      setIsLoading(false);
+
+      // Remove the empty assistant message on error
+      setMessages((prev) => prev.filter((msg) => msg.id !== assistantId));
     }
   };
 
@@ -192,24 +267,6 @@ function App() {
                     )}
                   </div>
                 ))}
-                {isLoading && (
-                  <div className="flex justify-start mb-6">
-                    <div className="flex gap-3">
-                      <div className="shrink-0 w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl rounded-bl-md px-5 py-4 shadow-lg">
-                        <div className="flex space-x-2">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
                 <div ref={messagesEndRef} />
               </>
             )}
