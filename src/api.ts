@@ -1,6 +1,21 @@
-import type { ChatRequest, StreamChunk } from './types';
+import type { ChatRequest, StreamChunk, ProjectsResponse } from './types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+export async function fetchProjects(): Promise<ProjectsResponse> {
+  const response = await fetch(`${API_URL}/api/projects`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+}
 
 export async function* streamMessage(request: ChatRequest): AsyncGenerator<StreamChunk> {
   const response = await fetch(`${API_URL}/api/chat/stream`, {
