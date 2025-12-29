@@ -6,7 +6,7 @@ A clean and professional chat interface for your local AI coding assistant with 
 
 - 💬 Real-time chat interface with message history
 - 🎨 Clean, professional dark-mode UI built with Tailwind CSS
-- 🔄 HTTP-based communication with backend
+- 🔄 Streaming-based communication with backend for real-time responses
 - 📝 Support for optional project context
 - 🎯 Intent display for assistant responses
 - 📁 Side panel for retrieved files and context
@@ -36,7 +36,7 @@ The application will be available at `http://localhost:5173`
 
 ## API Integration
 
-The frontend expects your backend to have a POST endpoint at `/api/chat` that:
+The frontend expects your backend to have a POST endpoint at `/api/chat/stream` that streams responses using Server-Sent Events (SSE) or newline-delimited JSON.
 
 **Request:**
 ```json
@@ -46,19 +46,40 @@ The frontend expects your backend to have a POST endpoint at `/api/chat` that:
 }
 ```
 
-**Response:**
+**Streaming Response:**
+
+The backend should stream JSON chunks, with each chunk on a new line. Chunks can be in SSE format (`data: {...}`) or raw JSON. Each chunk should follow this structure:
+
 ```json
 {
-  "answer": "Assistant's response",
+  "type": "content",
+  "content": "Partial response text"
+}
+```
+
+**Chunk Types:**
+
+1. **Content chunks** - Stream the assistant's response incrementally:
+```json
+{
+  "type": "content",
+  "content": "Part of the response..."
+}
+```
+
+2. **Metadata chunks** - Provide additional context (can be sent at any time):
+```json
+{
+  "type": "metadata",
   "intent": "The detected intent",
-  "retrieved_files": [
+  "retrievedFiles": [
     {
       "path": "src/example.ts",
       "content": "file content here",
       "relevance": 0.95
     }
   ],
-  "dependency_graph": {
+  "dependencyGraph": {
     "nodes": ["module1", "module2", "module3"],
     "edges": [
       { "from": "module1", "to": "module2" },
@@ -69,7 +90,16 @@ The frontend expects your backend to have a POST endpoint at `/api/chat` that:
 }
 ```
 
-Note: `retrieved_files` and `dependency_graph` are optional and will only show in the UI when present.
+3. **Done chunk** - Signal the end of the stream:
+```json
+{
+  "type": "done"
+}
+```
+
+Or send `data: [DONE]` in SSE format.
+
+Note: `intent`, `retrievedFiles`, and `dependencyGraph` are all optional in metadata chunks and will only show in the UI when present.
 
 ## Dependency Graph Visualization
 
