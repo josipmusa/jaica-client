@@ -34,3 +34,13 @@ export interface StreamChunk {
   dependencyGraph?: DependencyGraph;
 }
 
+export interface Project {
+  name: string;
+  node_count: number;
+}
+
+export interface ProjectsResponse {
+  projects: Project[];
+  count: number;
+}
+

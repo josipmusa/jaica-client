@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
+import { fetchProjects } from '../api';
+import type { Project } from '../types';
 
 interface ChatInputProps {
   onSendMessage: (message: string, projectName?: string) => void;
@@ -10,7 +12,29 @@ export default function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [projectName, setProjectName] = useState('');
   const [showProjectInput, setShowProjectInput] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Fetch projects when component mounts
+  useEffect(() => {
+    const loadProjects = async () => {
+      setProjectsLoading(true);
+      setProjectsError(null);
+      try {
+        const response = await fetchProjects();
+        setProjects(response.projects);
+      } catch (error) {
+        setProjectsError(error instanceof Error ? error.message : 'Failed to load projects');
+        console.error('Error fetching projects:', error);
+      } finally {
+        setProjectsLoading(false);
+      }
+    };
+
+    loadProjects();
+  }, []);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -46,14 +70,25 @@ export default function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
               <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
-              <input
-                type="text"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder="Project name"
-                className="flex-1 bg-transparent text-sm focus:outline-none text-slate-200 placeholder-slate-500"
-                disabled={disabled}
-              />
+              {projectsLoading ? (
+                <span className="flex-1 text-sm text-slate-400">Loading projects...</span>
+              ) : projectsError ? (
+                <span className="flex-1 text-sm text-red-400">{projectsError}</span>
+              ) : (
+                <select
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className="flex-1 bg-transparent text-sm focus:outline-none text-slate-200 placeholder-slate-500"
+                  disabled={disabled || projects.length === 0}
+                >
+                  <option value="" className="bg-slate-700">Select a project...</option>
+                  {projects.map((project) => (
+                    <option key={project.name} value={project.name} className="bg-slate-700">
+                      {project.name} ({project.node_count} nodes)
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <button
               type="button"
