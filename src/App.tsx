@@ -133,6 +133,22 @@ function App() {
           );
         }
       }
+
+      // Ensure streaming is marked as complete even if no 'done' chunk was received
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantId
+            ? {
+                ...msg,
+                content: accumulatedContent,
+                intent,
+                retrievedFiles,
+                dependencyGraph,
+                isStreaming: false,
+              }
+            : msg
+        )
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Error sending message:', err);

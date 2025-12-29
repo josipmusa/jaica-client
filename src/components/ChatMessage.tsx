@@ -9,6 +9,8 @@ interface ChatMessageProps {
 }
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
+  const isThinking = message.isStreaming && !message.content;
+
   const markdownComponents: Components = {
     code: ({ className, children, ...props }: any) => {
       const isInline = !className;
@@ -88,7 +90,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div className={`flex gap-3 mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <div className={`shrink-0 w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30 ${message.isStreaming && !message.content ? 'animate-pulse' : ''}`}>
+        <div className={`shrink-0 w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30 ${isThinking ? 'animate-pulse' : ''}`}>
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
@@ -105,7 +107,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           <div className="text-[15px] leading-relaxed prose prose-invert prose-slate max-w-none">
             {isUser ? (
               <div className="whitespace-pre-wrap wrap-break-word">{message.content}</div>
-            ) : message.isStreaming && !message.content ? (
+            ) : isThinking ? (
               // Show "thinking" indicator when streaming but no content yet
               <div className="flex items-center gap-3">
                 <div className="flex space-x-2">
